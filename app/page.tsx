@@ -1,69 +1,204 @@
-import Image from "next/image";
+"use client";
+
+import { count } from "console";
+import { useState, type KeyboardEvent } from "react";
+
+type Tarea = {
+  id: number;
+  texto: string;
+  completado: boolean;
+};
+
+type TareaEliminada = Tarea & {
+  eliminadaEn: string;
+};
 
 export default function Home() {
+  const [tareas, setTareas] = useState<Tarea[]>([
+    { id: 1, texto: "Configurar el repositorio", completado: true },
+    { id: 2, texto: "Diseñar la interfaz", completado: false },
+  ]);
+  const [tareas_eliminadas, setEliminados] = useState<TareaEliminada[]>([]);
+
+  const [nuevaTarea, setNuevaTarea] = useState("");
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [textoEditado, setTextoEditado] = useState("");
+
+  const agregarTarea = (evento: KeyboardEvent<HTMLInputElement>) => {
+    if (evento.key !== "Enter") return;
+
+    const texto = nuevaTarea.trim();
+    if (!texto) return;
+
+    const nueva: Tarea = {
+      id: Date.now(),
+      texto,
+      completado: false,
+    };
+
+    setTareas([nueva, ...tareas]);
+    setNuevaTarea("");
+  };
+
+  const marcarTarea = (id: number) => {
+    setTareas(
+      tareas.map((tarea) =>
+        tarea.id === id ? { ...tarea, completado: !tarea.completado } : tarea
+      )
+    );
+  };
+
+  const empezarEdicion = (tarea: Tarea) => {
+    setEditandoId(tarea.id);
+    setTextoEditado(tarea.texto);
+  };
+
+  const confirmarEdicion = () => {
+    const texto = textoEditado.trim();
+
+    if (texto) {
+      setTareas(
+        tareas.map((tarea) =>
+          tarea.id === editandoId ? { ...tarea, texto } : tarea
+        )
+      );
+    }
+
+    setEditandoId(null);
+  };
+
+  const agregarTareaEliminada = (tarea: Tarea) => {
+    const eliminada: TareaEliminada = {
+      ...tarea,
+      eliminadaEn: new Date().toLocaleTimeString("es-CO", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+
+    setEliminados([eliminada, ...tareas_eliminadas]);
+  };
+
+  const eliminarTarea = (id: number) => {
+    const tarea = tareas.find((tarea) => tarea.id === id);
+    if (tarea) agregarTareaEliminada(tarea);
+
+   setTareas(tareas.filter((tarea) => tarea.id !== id));
+  };
+   
+  const restaurarTarea = (id: number) => {
+   const eliminada = tareas_eliminadas.find((tarea) => tarea.id === id);
+   if (!eliminada) return;
+
+  const { eliminadaEn, ...tarea } = eliminada;
+
+  setTareas([tarea, ...tareas]);
+  setEliminados(tareas_eliminadas.filter((tarea) => tarea.id !== id));
+};
+
+const vaciarPapelera = () => {
+  setEliminados([]);
+};
+
+  const pendientes = tareas.filter((tarea) => !tarea.completado).length;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="contenedor-todo">
+      <section className="tarjeta-todo">
+        <header className="encabezado-todo">
+          <h1>Lista de pendientes</h1>
+          <p className="contador-todo">
+            {pendientes} de {tareas.length} pendientes
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+          <p>
+            Total de tareas: {tareas.length}
+          </p>
+        </header>
+
+        <input
+          className="entrada-todo"
+          type="text"
+          placeholder="Escribe una tarea y presiona Enter..."
+          value={nuevaTarea}
+          onChange={(e) => setNuevaTarea(e.target.value)}
+          onKeyDown={agregarTarea}
+        />
+
+        <ul className="lista-todo">
+          {tareas.length === 0 && (
+            <li className="lista-vacia">Aún no tienes tareas.</li>
+          )}
+
+          {tareas.map((tarea) => (
+            <li key={tarea.id} className="fila-tarea">
+              <input
+                type="checkbox"
+                checked={tarea.completado}
+                onChange={() => marcarTarea(tarea.id)}
+              />
+
+              {editandoId === tarea.id ? (
+                <input
+                  className="campo-edicion"
+                  type="text"
+                  value={textoEditado}
+                  onChange={(e) => setTextoEditado(e.target.value)}
+                  onBlur={confirmarEdicion}
+                  onKeyDown={(e) => e.key === "Enter" && confirmarEdicion()}
+                  autoFocus
+                />
+              ) : (
+                <span
+                  className={`texto-tarea ${tarea.completado ? "tachado" : ""}`}
+                  onClick={() => empezarEdicion(tarea)}
+                >
+                  {tarea.texto}
+
+                </span>
+            )}
+              <button
+                className="boton-eliminar"
+                onClick={() => eliminarTarea(tarea.id)}
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <section className="papelera">
+          <div className="encabezado-papelera">
+            <h2>Papelera</h2>
+            <span className="contador-papelera">{tareas_eliminadas.length}</span>
+
+            {tareas_eliminadas.length > 0 && (
+              <button className="boton-vaciar" onClick={vaciarPapelera}>
+                Vaciar
+              </button>
+            )}
+          </div>
+
+          {tareas_eliminadas.length === 0 ? (
+            <p className="papelera-vacia">No has eliminado tareas.</p>
+          ) : (
+            <ul className="lista-papelera">
+              {tareas_eliminadas.map((eliminada) => (
+                <li key={eliminada.id} className="fila-eliminada">
+                  <span className="texto-eliminado">{eliminada.texto}</span>
+                  <span className="hora-eliminada">{eliminada.eliminadaEn}</span>
+                  <button
+                    className="boton-restaurar"
+                    onClick={() => restaurarTarea(eliminada.id)}
+                    title="Restaurar tarea"
+                  >
+                    ↺
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </section>
+    </main>
   );
 }
