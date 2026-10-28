@@ -5,4 +5,4 @@ const nextConfig = {
   assetPrefix: process.env.ASSET_PREFIX || undefined,
 };
 
-export default nextConfig;
+export default nextConfig;    
